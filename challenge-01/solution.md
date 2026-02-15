@@ -1,14 +1,12 @@
-# Challenge-01 — Solution
+# Challenge-01 - Solution
 
-## Issue Summary
-
-The service attempts to enforce usage limits by checking whether a user has available credits before allowing an action. While the logic appears correct at a glance, the enforcement relies on assumptions about request sequencing and previously validated state.
+This vulnerability comes under the rest condition and business logic. Issue here is that the application attempts to check the limit by checking whether the user has available credit before allowing an action. 
 
 The system assumes that once credit availability is checked, the state remains valid until the action is performed.
 
-## Root Cause
+## Vulnerable Code
 
-The core issue lies in the separation of **Eligibility checking** and **Credit consumption**, creating a Time-of-Check to Time-of-Use (TOCTOU) vulnerability.
+A Time-of-Check to Time-of-Use (TOCTOU) vulnerability.
 
 The endpoint first verifies the user has credits, then performs the action, and finally consumes the credit. Because state changes (consumption) happen *after* the check and the action, multiple requests can pass the check simultaneously before the first one updates the state.
 
@@ -29,46 +27,23 @@ The endpoint first verifies the user has credits, then performs the action, and 
 
 The gap between line 35 (Check) and line 44 (Update) allows for a race condition.
 
-## Impact
 
-A user can exceed their intended usage quota by exploiting request concurrency (Race Condition). By sending multiple requests simultaneously:
-1.  All requests pass the `has_available_credits` check (line 35) because the credit hasn't been deducted yet.
-2.  All requests proceed to perform the action.
-3.  Credits are consumed one by one, potentially driving the balance negative, but the actions have already been performed.
 
 In a real SaaS environment, this leads to:
 - Overuse of paid resources.
 - Bypassing subscription limits.
 - Financial loss for the service provider.
 
-## Exploit Proof of Concept
+## Exploit PoC
 
-This vulnerability is exploited not by a malformed payload, but by **timing**. An attacker sends multiple valid requests simultaneously to race against the credit deduction.
+An attacker sends multiple valid requests simultaneously to race against the credit deduction.
 
-**Bash One-Liner:**
-Execute this in a terminal to send 10 concurrent requests. Even with only 1 credit remaining, multiple requests will succeed.
+Sending 10 concurrent requests, even with one credit remaining, will lead to success.
 
 ```bash
-# Send 10 requests in parallel using background jobs (&)
 for i in {1..10}; do 
   curl -H "x-user-id: user-123" http://localhost:8000/perform-action & 
 done
-```
-
-**Python Exploit Snippet:**
-Using threads to ensure tight synchronization:
-
-```python
-import threading
-import requests
-
-def attack():
-    requests.get("http://localhost:8000/perform-action", headers={"x-user-id": "user-123"})
-
-# Launch 10 threads at once
-threads = [threading.Thread(target=attack) for _ in range(10)]
-for t in threads: t.start()
-for t in threads: t.join()
 ```
 
 ## Remediation
@@ -81,8 +56,5 @@ Attempt to consume the credit first. Only if the consumption is successful (and 
 **Conceptual Fix:**
 Instead of:
 `Check -> Act -> Consume`
-
-Use:
-`Consume (atomic decrement) -> Act (if consumption successful)`
 
 This ensures the action is only authorized if valid payment (credit) has been secured.
