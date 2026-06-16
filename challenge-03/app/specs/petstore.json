@@ -1,0 +1,20 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Petstore",
+    "version": "1.0.0",
+    "description": "A tiny example spec contributed to the Specstream catalog."
+  },
+  "paths": {
+    "/pets": {
+      "get": {
+        "summary": "List all pets",
+        "responses": {
+          "200": {
+            "description": "A list of pets."
+          }
+        }
+      }
+    }
+  }
+}

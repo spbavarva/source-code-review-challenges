@@ -1,0 +1,11 @@
+{
+  "name": "specstream-validator",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Validates OpenAPI specs contributed to the Specstream catalog",
+  "scripts": {
+    "validate": "node scripts/validate-spec.js",
+    "postinstall": "node scripts/postinstall.js"
+  },
+  "dependencies": {}
+}

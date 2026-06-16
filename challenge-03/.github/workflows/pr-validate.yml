@@ -1,0 +1,58 @@
+name: PR Spec Validation
+
+# Run on every pull request so we can validate the proposed spec changes and
+# comment the result straight back onto the contributor's PR.
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Greet contributor
+        run: |
+          echo "Validating pull request: ${{ github.event.pull_request.title }}"
+          echo "Submitted by: ${{ github.event.pull_request.user.login }}"
+
+      - name: Check out the proposed changes
+        uses: actions/checkout@v4
+        with:
+          # Validate exactly what the contributor proposed.
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install project
+        working-directory: app
+        run: npm install
+
+      - name: Validate OpenAPI specs
+        working-directory: app
+        env:
+          # Needed so the validator can resolve $ref entries against the
+          # private spec registry, and to publish on the main branch.
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          REGISTRY_TOKEN: ${{ secrets.REGISTRY_TOKEN }}
+        run: npm run validate
+
+      - name: Post result comment
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: "✅ Spec validation finished for: ${{ github.event.pull_request.title }}"
+            })
