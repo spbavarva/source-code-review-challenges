@@ -1,0 +1,9 @@
+# Example of a legitimate report template that teams upload.
+title: quarterly-overview
+owner: analytics@company.internal
+widgets:
+  - type: line-chart
+    metric: revenue
+    period: 90d
+  - type: counter
+    metric: active-users
